@@ -21,11 +21,11 @@ struct route
     double length;
     double startDistanceFromBase;
     double endDistanceFromBase;
-    bool isUsed = false;
 
-    void printRoute()
+    void printRoute() //print details about route
     {
-        std::cout << index << " : (" << pickup.first << ", " << pickup.second << "), (" << dropoff.first << ", " << dropoff.second << "), length: " << length << ", " << startDistanceFromBase << ", " << endDistanceFromBase << std::endl;
+        std::cout << index << " : (" << pickup.first << ", " << pickup.second << "), (" << dropoff.first << ", " << dropoff.second << "), length: " << length << ", start distance from base: " 
+        << startDistanceFromBase << ", end distance from base: " << endDistanceFromBase << std::endl;
     }
 };
 
@@ -40,12 +40,13 @@ typedef std::pair<double, int> pi;
 
 std::vector<route> routes; //made global since program is just one algorithm, makes refactoring easier
 std::vector<driver> drivers;
-std::priority_queue<pi, std::vector<pi>, std::greater<pi>> priorityQ;
+std::priority_queue<pi, std::vector<pi>, std::greater<pi>> priorityQ; //Priority queues need to sort from min to max
 std::priority_queue<pi, std::vector<pi>, std::greater<pi>> beginQ;
 std::set<int> availableRoutes;
 
     //METHODS
-double calcDistance(double x1, double y1, double x2, double y2)
+    //Takes two points and calculates the euclidean distance between them
+double calcDistance(double x1, double y1, double x2, double y2) 
 {
     double x = x2 - x1;
     double y = y2 - y1;
@@ -54,6 +55,7 @@ double calcDistance(double x1, double y1, double x2, double y2)
     return sqrt(x + y);
 }
 
+    //Parses input file and populates routes vector
 void parseInput(std::string fileName)
 {
     std::ifstream fin(fileName);
@@ -102,7 +104,8 @@ void parseInput(std::string fileName)
     }
 }
 
-void printOutput() //outputs the schedule
+    //Prints the output of the schedule for each driver
+void printOutput()
 {
     for (int i = 0; i < drivers.size(); ++i)
     {
@@ -115,49 +118,46 @@ void printOutput() //outputs the schedule
         std::cout << "]\n" << std::flush;
     }
 }
-
-void createQueue(double x, double y) //this method should modify the priority queue with routes whose start location is closest to (x,y)
+    //Creates a priority queue with the available routes whose start location is closest to the parameters
+void createQueue(double x, double y) 
 {
     for (auto i: availableRoutes)
     {
-        double distance = calcDistance(routes.at(i).pickup.first, routes.at(i).pickup.second, x, y);   // Get total distance
+        double distance = calcDistance(routes.at(i).pickup.first, routes.at(i).pickup.second, x, y);  
         priorityQ.push(std::make_pair(distance, i));
     }
 
 }
 
-void constructSchedule(driver &d) //given a driver, create a schedule for him using the closest possible routes to his position
+    //Given a driver, creates a schedule for him using the closest possible routes to his current position
+void constructSchedule(driver &d) 
 {
     int index = 0;
     bool driverFinished = false;
-    while (1)
+    while (!driverFinished)
     {
         priorityQ = std::priority_queue<pi, std::vector<pi>, std::greater<pi>>(); //clear the queue
         createQueue(routes.at(d.routes.at(index)).dropoff.first, routes.at(d.routes.at(index)).dropoff.second);
 
-        while (1)
+        while (!priorityQ.empty())
         {
-            if (priorityQ.empty()) 
-            {
-                driverFinished = true;
-                break;
-            }
-
             std::pair<double, int> nextRoute = priorityQ.top();
-            priorityQ.pop();
+                //The time is would take to do this route and return to base
             double totalAddedTime = nextRoute.first + routes.at(nextRoute.second).length + routes.at(nextRoute.second).endDistanceFromBase; 
 
             if (d.driveTimeRemaining - totalAddedTime > 0) //route should be added
             {
                 d.routes.push_back(nextRoute.second);
-                d.driveTimeRemaining -= nextRoute.first; //do not want to add back to base yet
+                d.driveTimeRemaining -= nextRoute.first; 
                 d.driveTimeRemaining -= routes.at(nextRoute.second).length;
                 availableRoutes.erase(nextRoute.second);
                 break;
             }
-        }
 
-        if (driverFinished) { break; }
+            priorityQ.pop(); //Want to pop after in case driver picks up last availble route, he may be able to do more 
+        }
+        if (priorityQ.empty()) { driverFinished = true; } //There are no more routes that he can given his time constraints
+
         index++;
     }
 }
@@ -165,9 +165,7 @@ void constructSchedule(driver &d) //given a driver, create a schedule for him us
     //MAIN LOGIC
 int main(int argc, const char * argv[])
 {
-        parseInput(argv[1]); //parses the input file
-
-
+        parseInput(argv[1]);
 
         for (int i = 0; i < routes.size(); ++i) //initialize begin queue (how close each route is to the starting point)
         {
@@ -196,10 +194,12 @@ int main(int argc, const char * argv[])
             currDriver.routes.push_back(tmp.second);
             currDriver.driveTimeRemaining -= tmp.first; 
             currDriver.driveTimeRemaining -= routes.at(tmp.second).length; 
+
             constructSchedule(currDriver);
+
             drivers.push_back(currDriver);
         }
 
-        printOutput(); //prints the schedule of each driver
+        printOutput();
         return 0;
 }

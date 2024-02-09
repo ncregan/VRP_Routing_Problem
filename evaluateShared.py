@@ -95,13 +95,7 @@ def loadCountOrAssignmentError(problem, solutionSchedules):
     if len(solutionLoadIDs) != len(problem.loads):
         return "the solution load count is not equal to the problem load count"
         
-    # for id in solutionLoadIDs:
-    #     print(id)
-    #     print(type(id))
-    # print(solutionLoadIDs["7\n"])
-
     for load in problem.loads:
-        # print(load.id)
         if load.id not in solutionLoadIDs:
             return "load " + load.id + " was not assigned to a driver"
     
