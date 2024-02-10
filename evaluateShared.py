@@ -79,7 +79,7 @@ def loadSolutionFromString(solutionStr):
         splits = line.split(',')
         schedule = []
         for loadID in splits:
-            loadID = str.rstrip(loadID)
+            # loadID = str.rstrip(loadID)
             schedule.append(loadID)
         schedules.append(schedule)
     return schedules, ""
